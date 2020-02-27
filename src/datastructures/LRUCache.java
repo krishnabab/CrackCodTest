@@ -8,16 +8,24 @@ public class LRUCache {
 	Node head;
 	Node tail;
 	HashMap<Integer, Node> lruCache = null;
-	int cap =0;
+	int cap;
+	int count;
 	
 	public LRUCache(int capacity) {
 		this.cap = capacity;
         this.lruCache = new HashMap<>();
+        this.count = 0;
+        head = new Node(0, 0); 
+        tail = new Node(0, 0); 
+        head.next = tail; 
+        tail.previous = head; 
+        head.previous = null; 
+        tail.next = null; 
 	}
 	
 	public static void main(String[] args) {
 		LRUCache myCache = new LRUCache(3);
-		String query = "SET 1 2 SET 2 3 SET 1 5 SET 4 5 SET 6 7 GET 4 GET 1";
+		String query = "SET 1 2 SET 2 3 SET 1 5 SET 4 5 SET 6 7 GET 4 GET 1 SET 8 9 GET 2";
 		String words[] = query.split(" ");
 		for (int i=0 ; i< words.length;i++) {
 			if ("SET".equalsIgnoreCase(words[i]))
@@ -27,14 +35,26 @@ public class LRUCache {
 		}
 		myCache.displayCache();
 		}
-
+	
+	public void deleteNode(Node node) 
+    { 
+        node.previous.next = node.next; 
+        node.next.previous = node.previous; 
+    } 
+  
+    public void addToHead(Node node) 
+    { 
+        node.next = head.next; 
+        node.next.previous = node; 
+        node.previous = head; 
+        head.next = node; 
+    } 
 	private void get(int key) {
 		if (lruCache.containsKey(key)) {
-			//System.out.println("Key:"+key+"Value:"+lruCache.get(key).value);
-			//move this node to head position
-			lruCache.get(key).next = head;
-			head = lruCache.get(key);
-			
+			Node n = lruCache.get(key);
+			deleteNode(n);
+			addToHead(n);
+			System.out.println("GET >> Key:"+key+"Value:"+lruCache.get(key).value);
 		}
 		else {
 			System.out.println("Not exists in cache");
@@ -44,23 +64,26 @@ public class LRUCache {
 
 	private void set(int key, int value) {
 		
-		Node temp = new Node(key, value);
 		
-		if (head == null && tail == null) {
-			temp.previous = null;
-			temp.next=null;
-			head = temp;
-			tail = temp;
-		}else {
-			temp.next= head;
-			head = temp;
-			if(lruCache.size() > cap) {
-				lruCache.remove(tail.key);
-				tail.previous.next = null;
-			}
-		}
-		lruCache.put(key, temp);
-			
+		if (lruCache.get(key) != null) { 
+            Node node = lruCache.get(key); 
+            node.value = value; 
+            deleteNode(node); 
+            addToHead(node); 
+        } 
+		else { 
+            Node node = new Node(key, value); 
+            lruCache.put(key, node); 
+            if (count < cap) { 
+                count++; 
+                addToHead(node); 
+            } 
+            else { 
+            	lruCache.remove(tail.previous.key); 
+                deleteNode(tail.previous); 
+                addToHead(node); 
+            } 
+        } 
 		//displayCache();
 	}
 	public void displayCache () {
